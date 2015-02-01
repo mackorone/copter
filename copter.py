@@ -167,13 +167,16 @@ def main(arg):
             if (int(round(p.y + y))) in [x for x,c in v.blocks[p.x + x]]:
                 p.crashed = True
 
-        # Increment the number of turns passed
+        # Increment the distance
         v.distance += 1 
 
+        # Update the high score
         global HIGH_SCORE
         if v.distance > HIGH_SCORE:
             HIGH_SCORE = v.distance
-            # We shouldn't really do I/O every step, but it's so fast it doesn't matter
+
+        # If we've crashed, write the high score
+        if p.crashed:
             try:
                 out = open('.HIGH_SCORE', 'w')
                 out.write(str(HIGH_SCORE) + '\n')
@@ -198,7 +201,6 @@ def main(arg):
         put(win, 47, 1, '-'*(len(score)+len(high)))
         win.refresh()
         curses.flushinp()
-        # TODO: Notify user if screen is too small
 
     # Loop forever
     while True:
