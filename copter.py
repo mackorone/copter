@@ -7,8 +7,6 @@ import random
 import time
 from pykeyboard import PyKeyboardEvent
 
-HIGH_SCORE = 0
-
 def get_winsize():
     rows, columns = os.popen('stty size', 'r').read().split()
     return int(rows), int(columns)
@@ -30,18 +28,28 @@ pressed = { KEY_LEFT  : False,
             KEY_DOWN  : False,
             KEY_SPACE : False }
 
+# Load the high score
+HIGH_SCORE = 0
+try:
+    HIGH_SCORE = int(open('.HIGH_SCORE', 'r').readlines()[0].strip())
+except:
+    pass
+
+
 class Listener(PyKeyboardEvent):
     def tap(self, keycode, character, press):
         pressed[keycode] = press
 
-class Player:
+class Copter:
     def __init__(self):
-        # The center of the copter is used as reference
+
+        # Initial copter location
+        self.x = 20
+        self.y = LEVEL_HEIGHT/2
+
         #   ___.___
         # *===[_)
         #     ---
-        self.x = 20
-        self.y = LEVEL_HEIGHT/2
         self.body = [
             # Top
             ('_', (-3,  1)),
@@ -64,17 +72,23 @@ class Player:
             ('-', ( 0, -1)),
             ('-', ( 1, -1)),
         ]
+        
+        # Current velocity and acceleration
         self.dy = 0
         self.ddy = 0
-        self.accel = .05
+    
+        # Max velocity and acceleration
         self.max_vel = .8
+        self.max_acc = .05
+
+        # Other properties
         self.smoke = collections.deque()
         self.crashed = False
 
 class Level:
     def __init__(self):
         self.blocks = collections.deque()
-        self.turns = 0
+        self.distance = 0
         for x in xrange(LEVEL_WIDTH+1):
             self.blocks.append([(0, '#'), (LEVEL_HEIGHT+1, '#')])
         self.fromTop = 0
@@ -94,7 +108,7 @@ def main(arg):
     vertical_border = (rows - LEVEL_HEIGHT) / 2
     win.refresh()
 
-    p = Player()
+    p = Copter()
     v = Level()
 
     def put(win, x, y, char):
@@ -108,9 +122,9 @@ def main(arg):
 
         # Determine the location of the player
         if pressed[KEY_SPACE]:
-            p.ddy = p.accel
+            p.ddy = p.max_acc
         else:
-            p.ddy = -1*p.accel
+            p.ddy = -1*p.max_acc
         p.dy += p.ddy
         if (abs(p.dy) > p.max_vel):
             if (p.dy < 0):
@@ -127,7 +141,7 @@ def main(arg):
         col = []
 
         # grow the walls
-        wallSize = int(math.sqrt(v.turns/10))
+        wallSize = int(math.sqrt(v.distance/10))
         if random.random() > 0.5: # Grow down
             if (v.fromTop > 0) and random.random() < 0.1: # 0.1 chance of changing
                 v.fromTop -= 1
@@ -139,9 +153,10 @@ def main(arg):
 
         # sprinkle random chars
         for i in xrange(wallSize-v.fromTop, LEVEL_HEIGHT-v.fromTop):
-            if random.random()*2.5 < .001 + v.turns/500000.:
+            if random.random()*2.5 < .001 + v.distance/500000.:
                 col.append((i, '#'))
                     
+        # Append the new column
         v.blocks.append(col)
 
         # Check for a collision, where center of the copter is used as reference
@@ -153,11 +168,18 @@ def main(arg):
                 p.crashed = True
 
         # Increment the number of turns passed
-        v.turns += 1 
+        v.distance += 1 
 
         global HIGH_SCORE
-        if v.turns > HIGH_SCORE:
-            HIGH_SCORE = v.turns
+        if v.distance > HIGH_SCORE:
+            HIGH_SCORE = v.distance
+            # We shouldn't really do I/O every step, but it's so fast it doesn't matter
+            try:
+                out = open('.HIGH_SCORE', 'w')
+                out.write(str(HIGH_SCORE) + '\n')
+                out.close()
+            except:
+                pass
 
     def draw():
         win.clear()
@@ -168,7 +190,7 @@ def main(arg):
         for x, ys in enumerate(v.blocks):
             for y,char in ys:
                 put(win, x, y, char)
-        score = '| Score: ' + str(v.turns)
+        score = '| Score: ' + str(v.distance)
         high = '   High Score: ' + str(HIGH_SCORE) + ' |'
         put(win, 47, 2, score)
         put(win, 47 + len(score), 2, high)
@@ -176,6 +198,7 @@ def main(arg):
         put(win, 47, 1, '-'*(len(score)+len(high)))
         win.refresh()
         curses.flushinp()
+        # TODO: Notify user if screen is too small
 
     # Loop forever
     while True:
