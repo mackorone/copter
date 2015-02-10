@@ -18,8 +18,8 @@ KEY_DOWN  = 116
 KEY_SPACE = 65
 
 FRAME_RATE = 45 # fps
-LEVEL_WIDTH = 130
-LEVEL_HEIGHT = 35
+LEVEL_WIDTH = 100
+LEVEL_HEIGHT = 30
 
 # Whether or not each key is pressed
 pressed = { KEY_LEFT  : False,
