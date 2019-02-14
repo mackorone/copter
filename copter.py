@@ -1,7 +1,6 @@
 import collections
 import curses
 import math
-import numpy as np
 import os
 import random
 import time
@@ -17,7 +16,7 @@ KEY_UP    = 111
 KEY_DOWN  = 116
 KEY_SPACE = 65
 
-FRAME_RATE = 45 # fps
+FRAME_RATE = 60 # fps
 LEVEL_WIDTH = 100
 LEVEL_HEIGHT = 30
 
@@ -79,7 +78,7 @@ class Copter:
     
         # Max velocity and acceleration
         self.max_vel = .8
-        self.max_acc = .05
+        self.max_acc = .02
 
         # Other properties
         self.smoke = collections.deque()
@@ -99,7 +98,7 @@ def main(arg):
     screen = curses.initscr()
     screen.nodelay(1)
     curses.curs_set(0)
-    curses.use_default_colors() #42ff23
+    curses.use_default_colors()
 
     # Create the window
     rows, columns = get_winsize()
@@ -162,7 +161,7 @@ def main(arg):
         # Check for a collision, where center of the copter is used as reference
         #   ___.___
         # *===[_)
-        #     0 o
+        #     ---
         for char,(x,y) in p.body:
             if (int(round(p.y + y))) in [x for x,c in v.blocks[p.x + x]]:
                 p.crashed = True
@@ -191,7 +190,7 @@ def main(arg):
         for i,y in enumerate(p.smoke):
             put(win, p.x-5-(len(p.smoke)-i), int(round(y)), '.')
         for x, ys in enumerate(v.blocks):
-            for y,char in ys:
+            for y, char in ys:
                 put(win, x, y, char)
         score = '| Score: ' + str(v.distance)
         high = '   High Score: ' + str(HIGH_SCORE) + ' |'
